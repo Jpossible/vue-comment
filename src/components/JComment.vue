@@ -6,10 +6,13 @@
       contenteditable="true"
       @click="clickEvent"
       @keydown="keyDownEvent"
-      @keyup="keyUpEvent"
       @input="inputEvent"
+      @keyup="keyUpEvent"
       @blur="blurEvent"
     ></div>
+    <div class="input-placeholder" v-show="isPlaceholder">
+      {{placeholder}}
+    </div>
     <j-select-list @select="insertNode" v-if="showList"/>
   </div>
 </template>
@@ -26,14 +29,15 @@ export default {
       isFireFox: navigator.userAgent.indexOf('Firefox') >= 0,
       inputRange: null,
       showList: false,
-      preNode: null,
+      timeout: false,
       keyCtrl: [37, 38, 39, 40],
       className: 'at-sign',
-      timeout: false
+      placeholder: '请输入些什么11111111111111111111111111111111111',
+      isPlaceholder: true
     }
   },
   methods: {
-    _getCurRange () {
+    _getCurRange () { // 获取光标所在精确位置
       this.inputRange = getSelection().getRangeAt(0) // 获取选区开始的节点
     },
     _toNodeEnd (ele) {
@@ -47,7 +51,7 @@ export default {
     },
     _toNodeBef (ele) {
       let range = getSelection()
-      if (ele.previousSibling && ele.previousSibling.innerHTML !== '') {
+      if (ele && ele.previousSibling && ele.previousSibling.innerHTML !== '') {
         range.selectAllChildren(ele)
         range.collapseToStart()
         range.modify('move', 'backward', 'character')
@@ -58,15 +62,12 @@ export default {
       }
     },
     _delNodeBef (ele) {
-      if (ele.previousSibling) {
+      if (ele && ele.previousSibling) {
         let nodeValue = ele.previousSibling.textContent
         nodeValue = nodeValue.slice(0, nodeValue.length - 1)
         let newNode = nodeValue ? document.createTextNode(nodeValue) : document.createElement('span')// 上一个节点无内容时会导致无法删除BUG 创建新文本节点
         this.$refs.inputBox.replaceChild(newNode, ele.previousSibling)
       }
-    },
-    stopDefault (e) {
-      e.preventDefault()
     },
     createElement (name) {
       let ele = document.createElement('span')
@@ -94,7 +95,12 @@ export default {
       this._getCurRange() // 记录失去焦点时光标的偏移量
     },
     keyDownEvent (e) {
-      if (this.isFireFox) {
+      if (this.showList) { // 在唤出用户选择框时屏蔽输入框原本的键盘事件
+        this._getCurRange()
+        e.preventDefault()
+        return
+      }
+      if (this.isFireFox) { // 火狐兼容 在火狐下按下方向键盘切换焦点位置时需上锁
         if (this.keyCtrl.includes(e.which)) {
           this.timeout = true
         }
@@ -102,6 +108,11 @@ export default {
           e.preventDefault()
           return
         }
+      }
+      if (e.which === 13) { // 阻止输入框回车换行
+        e.preventDefault()
+      } else if (this.keyCtrl.includes(e.which)) {
+        this._getCurRange()
       }
       if ((e.which === 229 && e.shiftKey === true) || (e.which === 50 && e.shiftKey === true)) {
         this.atEvent()
@@ -114,19 +125,14 @@ export default {
           e.preventDefault()
         }
       }
-      if (!this.showList) {
-        if (e.which === 13) {
-          e.preventDefault()
-        } else if (this.keyCtrl.includes(e.which)) {
-          this._getCurRange()
-        }
-      } else {
-        this._getCurRange()
-        e.preventDefault()
-      }
     },
     keyUpEvent (e) {
-      if (this.isFireFox) {
+      if (e.which === 8 &&
+        (this.$refs.inputBox.innerText === '' || this.$refs.inputBox.innerText === '\n')) { // 火狐/n兼容
+        this.$refs.inputBox.innerHTML = ''
+        this.isPlaceholder = true
+      }
+      if (this.isFireFox) { // 火狐兼容 在火狐下抬起方向键盘切换焦点位置时需解锁
         if (this.keyCtrl.includes(e.which)) {
           this.timeout = false
         }
@@ -143,7 +149,10 @@ export default {
       }
     },
     inputEvent (e) {
-      if (e && e.inputType === 'deleteContentBackward' && this.isFireFox) {
+      if (this.isPlaceholder) {
+        this.isPlaceholder = false
+      }
+      if (this.isFireFox && e.inputType === 'deleteContentBackward') {
         this.fireFoxDel(e)
       }
     },
@@ -153,7 +162,7 @@ export default {
         e.preventDefault()
       }
     },
-    atEvent (e) { // 用户选择相关操作
+    atEvent () { // 用户选择相关操作
       this.showList = true
     },
     leaveRange () {
@@ -165,12 +174,28 @@ export default {
 
 <style lang="less">
   .input-area{
+    position: relative;
+    min-width: 150px;
+    border: 1px solid #dadada;
+    border-radius: 4px;
+    font-size: 16px;
+    vertical-align: middle;
+    word-break: break-all;
     .comment-range{
-      min-height: 30px;
-      min-width: 100px;
-      padding: 10px;
-      border: 1px solid #dadada;
-      word-break: break-word;
+      height: 20px;
+      padding: 5px;
+      outline: none;
+    }
+    .input-placeholder{
+      position: absolute;
+      padding: 5px;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -1;
+      color: #a7a5a5;
+      overflow: hidden;
     }
     .at-sign{
       color: blue;

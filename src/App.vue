@@ -23,8 +23,4 @@ export default {
   color: #2c3e50;
   margin-top: 60px;
 }
-.comment-container{
-  height: 100px;
-  border: 1px solid #dadada;
-}
 </style>
