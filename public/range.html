@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<style>
+    .box{
+        width: 300px;
+        height: 300px;
+        border: 1px solid #dadada;
+    }
+    .at{
+        display: inline-block;
+        color: blue;
+    }
+</style>
+    <div contenteditable="true" class="box" id="editbox"></div>
+    <button id="htmlbtn">html</button>
+<script>
+    var savep,offsetp;
+    var editbox = document.getElementById('editbox')
+    var btn = document.getElementById('htmlbtn')
+    editbox.onclick = function (e) {
+      savep = getSelection().getRangeAt(0)
+      //offsetp = savep.startOffset
+    }
+    editbox.onblur = function (e) {
+      savep = getSelection().getRangeAt(0)
+      //offsetp = savep.startOffset
+    }
+    btn.onclick = function () {
+      var i = document.createElement('span')
+      i.innerHTML = '@fjj'
+      i.contentEditable = false
+      i.className = 'at'
+      // savep.setStart(savep.startContainer, offsetp)
+      savep.insertNode(i)
+      var range = getSelection()// 创建range
+      if (range.focusNode == editbox){
+        range.selectAllChildren(range.anchorNode.nextSibling.nextSibling)
+        console.log('yes')
+      }
+        console.log(range)
+
+    }
+</script>
+</body>
+</html>
